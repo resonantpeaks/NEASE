@@ -491,10 +491,15 @@ class run(object):
             print('No genes found on your input.')
             
         else:
+            # gseapy >= 1.3 only accepts lower case organism names in enrichr ('human', 'mouse')
+            organism=self.organism.lower()
+
             # get gene sets supported in gseapy
-            gseapy_library = gp.get_library_name(organism=self.organism)
-            
-            
+            gseapy_library = gp.get_library_name(organism=organism)
+
+            if isinstance(gseapy_databases,str):
+                gseapy_databases=[gseapy_databases]
+
             # compare with user input with gseapy_library
             gene_set_database=list(set(gseapy_library).intersection(gseapy_databases))
             
@@ -508,9 +513,10 @@ class run(object):
                 # run gene set enrichment
                 
                 if non_symmetrical_only:
-                    if self.input_type=="Majiq":
+                    if self.input_type=="MAJIQ":
                         print('Non-symmetrical exons enrichment is not available for Majiq output. Please use standard input. ')
-                        
+                        return
+
                     else:
                         # run only on non-symteric
                         gene_list=[ Ensemb_to_name(x,self.gene_mapping,self.organism) for x in self.symetric_genes]
@@ -519,7 +525,14 @@ class run(object):
                      gene_list=[ Ensemb_to_name(x,self.gene_mapping,self.organism) for x in self.spliced_genes]
                         
                         
-                enr=gp.enrichr(gene_list=gene_list,organism=self.organism,gene_sets=gene_set_database,outdir=outdir)
+                try:
+                    enr=gp.enrichr(gene_list=gene_list,organism=organism,gene_sets=gene_set_database,outdir=outdir)
+                except ValueError as e:
+                    # gseapy fails while drawing its bar plot when no term passes its cutoff (0.05)
+                    if 'No enrich terms' not in str(e):
+                        raise
+                    print('No gene set passes the gseapy cutoff (adjusted p value 0.05); no plot was saved.')
+                    enr=gp.enrichr(gene_list=gene_list,organism=organism,gene_sets=gene_set_database,outdir=outdir,no_plot=True)
 
                 return enr.results.sort_values('Adjusted P-value')
             
