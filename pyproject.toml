@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nease"
-version = "1.3.2"
+version = "1.4.0"
 description = "NEASE: A network-based approach for the enrichment of alternative splicing events"
 readme = "README.md"
 license = "GPL-3.0-only"
